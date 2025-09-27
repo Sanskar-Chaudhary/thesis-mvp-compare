@@ -2,47 +2,59 @@ import { useMemo, useState } from 'react';
 
 let nextId = 1;
 
+function raf2() {
+  return new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res)));
+}
+
 export default function App() {
   const [text, setText] = useState('');
   const [tasks, setTasks] = useState([]);
 
   const remaining = useMemo(() => tasks.filter(t => !t.done).length, [tasks]);
 
-  function addTask(label) {
-    setTasks(prev => [...prev, { id: nextId++, text: (label ?? text).trim(), done: false }]);
+  function addOne(label) {
+    const v = (label ?? text).trim();
+    if (!v) return;
+    setTasks(prev => [...prev, { id: nextId++, text: v, done: false }]);
     setText('');
   }
 
   function toggleTask(id) {
-    setTasks(prev => prev.map(t => t.id === id ? { ...t, done: !t.done } : t));
+    setTasks(prev => prev.map(t => (t.id === id ? { ...t, done: !t.done } : t)));
   }
 
   function deleteTask(id) {
     setTasks(prev => prev.filter(t => t.id !== id));
   }
 
-  async function add100() {
+  async function addN(n) {
     const t0 = performance.now();
-    // batch: set state once to include 100 new tasks
     setTasks(prev => {
       const start = nextId;
-      const arr = [...prev];
-      for (let i = 0; i < 100; i++) {
+      const arr = prev.slice();
+      for (let i = 0; i < n; i++) {
         arr.push({ id: start + i, text: `Task ${start + i}`, done: false });
       }
-      nextId += 100;
+      nextId += n;
       return arr;
     });
-    // wait 2 frames to allow paint
-    await new Promise(requestAnimationFrame);
-    await new Promise(requestAnimationFrame);
+    await raf2();
     const t1 = performance.now();
-    console.log('React: render for +100 items (ms):', (t1 - t0).toFixed(2));
+    console.log(`React: add ${n} items (ms):`, (t1 - t0).toFixed(2));
+  }
+
+  async function deleteAll() {
+    const t0 = performance.now();
+    setTasks([]);
+    await raf2();
+    const t1 = performance.now();
+    console.log('React: delete ALL items (ms):', (t1 - t0).toFixed(2));
   }
 
   return (
     <div style={{maxWidth: 560, margin: '40px auto', fontFamily: 'system-ui, sans-serif'}}>
-      <h1>React To-Do</h1>
+      <h1 style={{textAlign:'center'}}>React To-Do</h1>
+
       <div style={{display:'flex', gap:8}}>
         <input
           value={text}
@@ -50,8 +62,15 @@ export default function App() {
           placeholder="Add a task"
           style={{flex:1, padding:8}}
         />
-        <button onClick={() => text.trim() && addTask()}>Add</button>
-        <button onClick={add100} title="Add 100 tasks for measurement">+100</button>
+        <button onClick={() => addOne()}>Add</button>
+      </div>
+
+      <div style={{display:'flex', gap:8, marginTop:8, flexWrap:'wrap'}}>
+        <button onClick={() => addN(100)}>+100</button>
+        <button onClick={() => addN(1000)}>+1,000</button>
+        <button onClick={() => addN(10000)}>+10,000</button>
+        <button onClick={() => addN(20000)}>+20,000</button>
+        <button onClick={deleteAll} style={{marginLeft:'auto'}}>Delete All</button>
       </div>
 
       <p style={{marginTop:12}}>
