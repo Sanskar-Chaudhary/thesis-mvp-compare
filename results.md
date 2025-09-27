@@ -13,4 +13,4 @@ file count for vue-todo/src - 5
 total LoC for vue-todo/src - 186
 
 file count for svelte-todo/src - 5
-total LoC for sve;te-todo/src - 153
+total LoC for svelte-todo/src - 153
